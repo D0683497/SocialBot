@@ -1,6 +1,5 @@
 from flask import Flask, escape, request, make_response, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_apscheduler import APScheduler
 import json
 
 import requests
@@ -10,12 +9,11 @@ import re
 
 app = Flask(__name__)
 db = SQLAlchemy(app)
-scheduler = APScheduler()
 app.config['SECRET_KEY'] = 'SECRET_KEY'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
-scheduler.init_app(app)
 
 class Vocabulary(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -29,6 +27,7 @@ class Vocabulary(db.Model):
         return '<Vocabulary %r>' % self.chinese
 
 def get_all_vocabulary():
+    print('------------開始查詢------------')
     url = 'http://www.fcu.edu.tw/wSite/lp?ctNode=16185&mp=1'
     r = requests.get(url)
     soup = BeautifulSoup(r.text,"html.parser")
@@ -46,24 +45,26 @@ def get_all_vocabulary():
         vocabulary = Vocabulary(serial_number=fields[0].text.strip(), main_category=fields[1].text.strip(), sub_category=fields[2].text.strip(), chinese=fields[3].text.strip(), english=fields[4].text.strip())
         db.session.add(vocabulary)
         db.session.commit()
+    print('------------查詢結束------------')
 
 def get_keyword_vocabulary(keyword):
-    result = User.query.filter_by(chinese=keyword).all()
+    result = Vocabulary.query.filter(Vocabulary.chinese.contains(keyword)).all()
     msg = ''
-    if result != None:
+    if result:
         for i in result:
-            msg += "「" + i["chinese"] + '」 的英文是 「' + i["english"] + '」\n'
+            msg += "「" + i.chinese + '」 的英文是 「' + i.english + '」\n'
     else:
         msg += "查無 「" + keyword + "」 的英文"
     return msg
 
-scheduler.add_job(func=get_all_vocabulary, trigger='interval', hours=8, id='interval_task')
-scheduler.add_job(func=get_all_vocabulary, id='onetime_task')
-scheduler.start()
-
 @app.route("/", methods=['GET'])
 def index():
     return "Hello World!"
+
+@app.route("/update", methods=['GET'])
+def update():
+    get_all_vocabulary()
+    return "Success!"
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
