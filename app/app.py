@@ -1,11 +1,9 @@
-from flask import Flask, escape, request, make_response, jsonify,  render_template
+from flask import Flask, request, make_response, jsonify,  render_template
 from flask_sqlalchemy import SQLAlchemy
 import json
 
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
-import re
 
 app = Flask(__name__)
 db = SQLAlchemy(app)
