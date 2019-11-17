@@ -1,4 +1,4 @@
-from flask import Flask, escape, request, make_response, jsonify
+from flask import Flask, escape, request, make_response, jsonify,  render_template
 from flask_sqlalchemy import SQLAlchemy
 import json
 
@@ -59,7 +59,7 @@ def get_keyword_vocabulary(keyword):
 
 @app.route("/", methods=['GET'])
 def index():
-    return "Hello World!"
+    return  render_template('index.html')
 
 @app.route("/update", methods=['GET'])
 def update():
